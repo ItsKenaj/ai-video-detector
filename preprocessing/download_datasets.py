@@ -1,29 +1,29 @@
-"""
-Download and prepare datasets for AI Video Detector.
-Supports Hugging Face and ModelScope sources.
-"""
+import os
+import requests
+from tqdm import tqdm
 
-from datasets import load_dataset
-from modelscope.msdatasets import MsDataset
-from pathlib import Path
+def download_file(url, dest):
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
+    with requests.get(url, stream=True) as r:
+        r.raise_for_status()
+        total = int(r.headers.get("content-length", 0))
+        with open(dest, "wb") as f, tqdm(total=total, unit="B", unit_scale=True, desc=os.path.basename(dest)) as bar:
+            for chunk in r.iter_content(chunk_size=8192):
+                f.write(chunk)
+                bar.update(len(chunk))
 
-def download_huggingface(dataset_name, save_dir):
-    print(f"Downloading {dataset_name}...")
-    ds = load_dataset(dataset_name)
-    save_path = Path(save_dir)
-    save_path.mkdir(parents=True, exist_ok=True)
-    print(f"Dataset {dataset_name} available at {save_path} (via cache).")
-    return ds
-
-def download_modelscope(dataset_name, save_dir):
-    print(f"Downloading {dataset_name}...")
-    ds = MsDataset.load(dataset_name)
-    save_path = Path(save_dir)
-    save_path.mkdir(parents=True, exist_ok=True)
-    print(f"Dataset {dataset_name} available at {save_path} (via cache).")
-    return ds
+def download_deepaction():
+    base_url = "https://huggingface.co/datasets/faridlab/deepaction_v1/resolve/main/"
+    files = [
+        "metadata.csv",  # replace with the actual filenames once you inspect the dataset card
+    ]
+    target_dir = "data/synthetic/deepaction_v1"
+    os.makedirs(target_dir, exist_ok=True)
+    for file in files:
+        url = base_url + file
+        dest = os.path.join(target_dir, file)
+        download_file(url, dest)
+    print(f"✅ DeepAction_v1 dataset downloaded to {target_dir}")
 
 if __name__ == "__main__":
-    download_huggingface("faridlab/deepaction_v1", "data/synthetic/deepaction_v1")
-    download_huggingface("kalpitbcontrails/seetrails_aigvdet_v2.0.0", "data/synthetic/seetrails")
-    download_modelscope("cccnju/GenVideo-100K", "data/synthetic/genvideo")
+    download_deepaction()
