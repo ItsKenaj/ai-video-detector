@@ -1,36 +1,29 @@
 import os
 import numpy as np
 import cv2
+import matplotlib
+matplotlib.use("Agg")  # ensures it runs headless (no display required)
 import matplotlib.pyplot as plt
 from pathlib import Path
 import random
 
-# --- Configuration ---
 FEATURES_DIR = Path("data/features")
 OUTPUT_DIR = Path("data/visualizations")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-# --- Helper functions ---
 def load_image(path):
-    """Load image using OpenCV and convert to RGB."""
     img = cv2.imread(str(path))
     if img is None:
         raise FileNotFoundError(f"Image not found: {path}")
     return cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
 def normalize_for_vis(array):
-    """Normalize numpy array for visualization."""
     arr = array.astype(np.float32)
     arr = np.log(np.abs(arr) + 1e-3) if np.iscomplexobj(arr) else arr
     arr = (arr - arr.min()) / (arr.max() - arr.min() + 1e-8)
     return arr
 
-def visualize_sample(label="real", subset="sample", frame_idx=0):
-    """Visualize one RGB frame, residual, and FFT magnitude."""
-    frame_dir = FEATURES_DIR / "frames" / label / subset
-    fft_dir = FEATURES_DIR / "fft" / label / subset
-    res_dir = FEATURES_DIR / "residuals" / label / subset
-
+def visualize_sample(frame_dir, fft_dir, res_dir, label, subset, frame_idx=0):
     frame_path = frame_dir / f"frame_{frame_idx:05d}.jpg"
     fft_path = fft_dir / f"frame_{frame_idx:05d}_fft.npy"
     res_path = res_dir / f"frame_{frame_idx:05d}_residual.npy"
@@ -63,28 +56,36 @@ def visualize_sample(label="real", subset="sample", frame_idx=0):
     plt.tight_layout()
     plt.savefig(out_path, dpi=150)
     plt.close()
-    print(f"Saved visualization: {out_path}")
+    print(f"✅ Saved visualization: {out_path}")
 
 def main():
     print("=== Visualizing extracted features ===")
-    label_options = ["real", "synthetic"]
-    random.shuffle(label_options)
+    labels = ["real", "synthetic"]
 
-    for label in label_options:
+    for label in labels:
         base_dir = FEATURES_DIR / "frames" / label
         if not base_dir.exists():
-            print(f"No frames found for label '{label}'")
+            print(f"⚠️  No frames found for '{label}'")
             continue
 
-        # Pick a random subfolder (sample or dataset subset)
-        subsets = [d.name for d in base_dir.iterdir() if d.is_dir()]
-        if not subsets:
+        # Find all nested subdirectories containing frames
+        all_subsets = [p for p in base_dir.rglob("frame_00000.jpg")]
+        if not all_subsets:
+            print(f"⚠️  No frame_00000.jpg found under {base_dir}")
             continue
 
-        subset = random.choice(subsets)
-        visualize_sample(label=label, subset=subset, frame_idx=0)
+        sample_frame = random.choice(all_subsets)
+        subset_dir = sample_frame.parent
+        rel_subset = subset_dir.relative_to(base_dir)
+        subset_name = str(rel_subset).replace("/", "_")
 
-    print("\nVisualization complete. Check data/visualizations/ for saved images.")
+        # Match FFT and residual directories by the same relative path
+        fft_dir = FEATURES_DIR / "fft" / label / rel_subset
+        res_dir = FEATURES_DIR / "residuals" / label / rel_subset
+
+        visualize_sample(subset_dir, fft_dir, res_dir, label, subset_name, frame_idx=0)
+
+    print("\n✅ Visualization complete. Check data/visualizations/ for saved images.")
 
 if __name__ == "__main__":
     main()
