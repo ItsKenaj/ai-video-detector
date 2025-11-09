@@ -1,29 +1,42 @@
 import os
 import requests
-from tqdm import tqdm
+
+BASE_URL = "https://huggingface.co/datasets/faridlab/deepaction_v1/resolve/main/"
+TARGET_DIR = "data/synthetic/deepaction_v1"
 
 def download_file(url, dest):
     os.makedirs(os.path.dirname(dest), exist_ok=True)
-    with requests.get(url, stream=True) as r:
-        r.raise_for_status()
-        total = int(r.headers.get("content-length", 0))
-        with open(dest, "wb") as f, tqdm(total=total, unit="B", unit_scale=True, desc=os.path.basename(dest)) as bar:
+    print(f"Downloading {url} -> {dest}")
+    r = requests.get(url, stream=True)
+    if r.status_code == 200:
+        with open(dest, "wb") as f:
             for chunk in r.iter_content(chunk_size=8192):
                 f.write(chunk)
-                bar.update(len(chunk))
+    else:
+        print(f"⚠️ Skipping {url} (HTTP {r.status_code})")
 
 def download_deepaction():
-    base_url = "https://huggingface.co/datasets/faridlab/deepaction_v1/resolve/main/"
-    files = [
-        "metadata.csv",  # replace with the actual filenames once you inspect the dataset card
+    folders = [
+        "BDAnimateDiffLightning",
+        "CogVideoX5B",
+        "Pexels",
+        "RunwayML",
+        "StableDiffusion",
+        "Veo",
+        "VideoPoet",
     ]
-    target_dir = "data/synthetic/deepaction_v1"
-    os.makedirs(target_dir, exist_ok=True)
+    files = ["captions.csv", "README.md"]
+
+    # download root files
     for file in files:
-        url = base_url + file
-        dest = os.path.join(target_dir, file)
+        url = BASE_URL + file
+        dest = os.path.join(TARGET_DIR, file)
         download_file(url, dest)
-    print(f"✅ DeepAction_v1 dataset downloaded to {target_dir}")
+
+    # just create folder placeholders for now
+    for folder in folders:
+        os.makedirs(os.path.join(TARGET_DIR, folder), exist_ok=True)
+        print(f"📁 Created folder: {folder} (contents must be fetched manually or via HF API)")
 
 if __name__ == "__main__":
     download_deepaction()
