@@ -15,7 +15,7 @@ def download_file(url, dest):
             for chunk in r.iter_content(chunk_size=8192):
                 f.write(chunk)
     else:
-        print(f"⚠️ Skipping {url} (HTTP {r.status_code})")
+        print(f"Skipping {url} (HTTP {r.status_code})")
 
 def download_deepaction():
     folders = [
@@ -38,19 +38,19 @@ def download_deepaction():
     # just create folder placeholders for now
     for folder in folders:
         os.makedirs(os.path.join(TARGET_DIR, folder), exist_ok=True)
-        print(f"📁 Created folder: {folder} (contents must be fetched manually or via HF API)")
+        print(f"Created folder: {folder} (contents must be fetched manually or via HF API)")
 
-def download_kinetics_subset(target_dir="data/real/kinetics_subset"):
+def download_kinetics_subset(target_dir="data/real/kinetics_mini"):
     os.makedirs(target_dir, exist_ok=True)
-    print("Downloading a small subset of Kinetics (real human videos)...")
-    ds = load_dataset("Maysee/kinetics-400-mini", split="train[:10]")
+    print("Downloading Kinetics-Mini (real human action videos)...")
+    ds = load_dataset("nateraw/kinetics-mini", split="train[:10]")  # small subset
     for i, sample in enumerate(ds):
         video = sample["video"]
         if video is None:
             continue
         with open(os.path.join(target_dir, f"real_{i:03d}.mp4"), "wb") as f:
             f.write(video["bytes"])
-    print(" Downloaded small real video subset.")
+    print(f"Downloaded {len(ds)} Kinetics-Mini videos into {target_dir}")
 
 if __name__ == "__main__":
     download_deepaction()
