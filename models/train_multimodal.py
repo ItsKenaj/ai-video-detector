@@ -87,14 +87,26 @@ def train_model():
         total_loss = 0.0
         for batch in loader:
             frames, fft, residuals, labels = batch
-            frames, residuals, labels = frames.to(device), residuals.to(device), labels.float().to(device)
 
-            optimizer.zero_grad()
-            outputs = model(frames, residuals).squeeze()
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
-            total_loss += loss.item()
+            for batch in loader:
+                frames, fft, residuals, labels = batch
+
+                # Skip batches where tensors didn’t load properly
+                if not torch.is_tensor(frames) or not torch.is_tensor(residuals):
+                    print("Skipping invalid batch (frames or residuals not tensor).")
+                    continue
+
+                frames = frames.to(device)
+                fft = fft.to(device)
+                residuals = residuals.to(device)
+                labels = labels.float().to(device)
+
+                optimizer.zero_grad()
+                outputs = model(frames, fft, residuals).squeeze()
+                loss = criterion(outputs, labels)
+                loss.backward()
+                optimizer.step()
+                total_loss += loss.item()
 
         print(f"Epoch {epoch+1} | Loss: {total_loss/len(loader):.4f}")
 
