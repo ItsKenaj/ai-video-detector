@@ -11,12 +11,12 @@ os.makedirs(SYNTH_DIR, exist_ok=True)
 
 def download_small_kinetics(n=5):
     print(f"Downloading {n} sample videos from Kinetics-Mini …")
-    ds = load_dataset("faridlab/kinetics_mini", split="train", streaming=True)
+    ds = load_dataset("nateraw/kinetics", split="train", streaming=True)
     for i, ex in enumerate(ds.take(n)):
         path = os.path.join(REAL_DIR, f"sample_{i}.mp4")
         with open(path, "wb") as f:
             f.write(ex["video"].read())
-    print("✅ Saved real samples to", REAL_DIR)
+    print("Saved real samples to", REAL_DIR)
 
 def download_small_deepaction(n=5):
     print(f"Downloading {n} sample videos from DeepAction v1 …")
@@ -44,4 +44,4 @@ if __name__ == "__main__":
     print("=== Starting lightweight dataset download ===")
     download_small_kinetics(5)
     download_small_deepaction(5)
-    print("\n✅ Finished demo download — 10 videos total.")
+    print("\nFinished demo download — 10 videos total.")
