@@ -1,57 +1,47 @@
 import os
-import requests
+import random
 from datasets import load_dataset
+from huggingface_hub import hf_hub_download
 
+REAL_DIR = "data/real/kinetics_mini"
+SYNTH_DIR = "data/synthetic/deepaction_v1"
 
-BASE_URL = "https://huggingface.co/datasets/faridlab/deepaction_v1/resolve/main/"
-TARGET_DIR = "data/synthetic/deepaction_v1"
+os.makedirs(REAL_DIR, exist_ok=True)
+os.makedirs(SYNTH_DIR, exist_ok=True)
 
-def download_file(url, dest):
-    os.makedirs(os.path.dirname(dest), exist_ok=True)
-    print(f"Downloading {url} -> {dest}")
-    r = requests.get(url, stream=True)
-    if r.status_code == 200:
-        with open(dest, "wb") as f:
-            for chunk in r.iter_content(chunk_size=8192):
-                f.write(chunk)
-    else:
-        print(f"Skipping {url} (HTTP {r.status_code})")
+def download_small_kinetics(n=5):
+    print(f"Downloading {n} sample videos from Kinetics-Mini …")
+    ds = load_dataset("faridlab/kinetics_mini", split="train", streaming=True)
+    for i, ex in enumerate(ds.take(n)):
+        path = os.path.join(REAL_DIR, f"sample_{i}.mp4")
+        with open(path, "wb") as f:
+            f.write(ex["video"].read())
+    print("✅ Saved real samples to", REAL_DIR)
 
-def download_deepaction():
-    folders = [
+def download_small_deepaction(n=5):
+    print(f"Downloading {n} sample videos from DeepAction v1 …")
+    sources = [
         "BDAnimateDiffLightning",
-        "CogVideoX5B",
-        "Pexels",
         "RunwayML",
         "StableDiffusion",
-        "Veo",
         "VideoPoet",
     ]
-    files = ["captions.csv", "README.md"]
-
-    # download root files
-    for file in files:
-        url = BASE_URL + file
-        dest = os.path.join(TARGET_DIR, file)
-        download_file(url, dest)
-
-    # just create folder placeholders for now
-    for folder in folders:
-        os.makedirs(os.path.join(TARGET_DIR, folder), exist_ok=True)
-        print(f"Created folder: {folder} (contents must be fetched manually or via HF API)")
-
-def download_kinetics_subset(target_dir="data/real/kinetics_mini"):
-    os.makedirs(target_dir, exist_ok=True)
-    print("Downloading Kinetics-Mini (real human action videos)...")
-    ds = load_dataset("nateraw/kinetics", split="train[:10]")  # small subset
-    for i, sample in enumerate(ds):
-        video = sample["video"]
-        if video is None:
-            continue
-        with open(os.path.join(target_dir, f"real_{i:03d}.mp4"), "wb") as f:
-            f.write(video["bytes"])
-    print(f"Downloaded {len(ds)} Kinetics-Mini videos into {target_dir}")
+    for src in sources[:n]:
+        try:
+            file_path = hf_hub_download(
+                repo_id="faridlab/deepaction_v1",
+                filename=f"{src}/sample_0.mp4",
+                repo_type="dataset",
+            )
+            target = os.path.join(SYNTH_DIR, f"{src}_sample.mp4")
+            os.makedirs(os.path.dirname(target), exist_ok=True)
+            os.system(f"cp {file_path} {target}")
+            print(f"  • Fetched {src}_sample.mp4")
+        except Exception as e:
+            print(f"  • Skipped {src}: {e}")
 
 if __name__ == "__main__":
-    download_deepaction()
-    download_kinetics_subset()
+    print("=== Starting lightweight dataset download ===")
+    download_small_kinetics(5)
+    download_small_deepaction(5)
+    print("\n✅ Finished demo download — 10 videos total.")
