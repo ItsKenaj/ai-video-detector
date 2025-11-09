@@ -58,5 +58,5 @@ def download_some_deepaction(max_per_source=3):
 if __name__ == "__main__":
     print("=== Starting balanced dataset download ===")
     download_small_kinetics(5)
-    download_some_deepaction(max_per_source=3)
+    download_some_deepaction(max_per_source=1)
     print("\n✅ Finished demo download — real + synthetic samples ready.")
