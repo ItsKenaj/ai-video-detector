@@ -1,6 +1,17 @@
+
+# Ignore datasets and generated outputs
+data/**
+!data/.gitkeep
+results/**
+!results/.gitkeep
+
+# Ignore virtual environment
 venv/
-.env/
+
+# Ignore temporary and cache files
 __pycache__/
 *.pyc
-.DS_Store
-.idea/
+*.pyo
+*.npy
+*.jpg
+*.mp4
