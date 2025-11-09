@@ -43,7 +43,7 @@ def download_deepaction():
 def download_kinetics_subset(target_dir="data/real/kinetics_mini"):
     os.makedirs(target_dir, exist_ok=True)
     print("Downloading Kinetics-Mini (real human action videos)...")
-    ds = load_dataset("nateraw/kinetics-mini", split="train[:10]")  # small subset
+    ds = load_dataset("nateraw/kinetics", split="train[:10]")  # small subset
     for i, sample in enumerate(ds):
         video = sample["video"]
         if video is None:
