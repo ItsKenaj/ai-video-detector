@@ -76,7 +76,7 @@ class MultiModalClassifier(nn.Module):
 
 def train_model():
     device = torch.device("cpu")
-    dataset = VideoFeatureDataset(root_dir="data/features", split="train")
+    dataset = VideoFeatureDataset(root_dir="data/features")
     loader = DataLoader(dataset, batch_size=1, shuffle=True)
 
     model = MultiModalClassifier().to(device)
@@ -99,7 +99,7 @@ def train_model():
         print(f"Epoch {epoch+1} | Loss: {total_loss/len(loader):.4f}")
 
     torch.save(model.state_dict(), "results/multimodal_baseline.pth")
-    print("✅ Training completed and model saved at results/multimodal_baseline.pth")
+    print("Training completed and model saved at results/multimodal_baseline.pth")
 
 if __name__ == "__main__":
     train_model()
