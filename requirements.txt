@@ -1,71 +1,68 @@
-# Core dependencies
-numpy==1.26.4
-pandas==2.1.4
-scipy==1.15.3
-pillow==12.0.0
-tqdm==4.67.1
-requests==2.32.5
-PyYAML==6.0.3
-typing_extensions==4.15.0
-
-# Data handling / Hugging Face
-datasets==2.14.6
-huggingface-hub==0.36.0
-pyarrow==12.0.1
-dill==0.3.7
-fsspec==2023.10.0
-multiprocess==0.70.15
-xxhash==3.6.0
-
-# Visualization & plotting
-matplotlib==3.9.2
-seaborn==0.13.2
-
-# Deep learning / model training
-torch==2.4.0
-torchvision==0.19.0
-einops==0.8.1
-
-# Video I/O and processing
-opencv-python==4.10.0.84
-
-# Async utilities
-aiohttp==3.13.2
-async-timeout==5.0.1
-attrs==25.4.0
-frozenlist==1.8.0
-yarl==1.22.0
+# Core utilities
+addict==2.4.0
 aiohappyeyeballs==2.6.1
-
-# Aliyun / HF mirrors (some datasets use these)
+aiohttp==3.13.2
+aiosignal==1.4.0
 aliyun-python-sdk-core==2.16.0
 aliyun-python-sdk-kms==2.16.5
-oss2==2.19.1
+async-timeout==5.0.1
+attrs==25.4.0
+certifi==2025.10.5
+cffi==2.0.0
+charset-normalizer==3.4.4
 crcmod==1.7
-pycryptodome==3.23.0
-hf-xet==1.2.0
-
-# Misc utilities
+cryptography==46.0.3
+datasets==2.14.6
+dill==0.3.7
+einops==0.8.1
 filelock==3.20.0
+frozenlist==1.8.0
+fsspec==2023.10.0
+gast==0.6.0
+hf-xet==1.2.0
+huggingface-hub==0.36.0
+idna==3.11
+jmespath==0.10.0
+modelscope==1.12.0
+multidict==6.7.0
+multiprocess==0.70.15
+numpy==1.26.4
+oss2==2.19.1
 packaging==25.0
+pandas==2.1.4
+pillow==12.0.0
 platformdirs==4.5.0
 propcache==0.4.1
-simplejson==3.20.2
-sortedcontainers==2.4.0
-six==1.17.0
-tomli==2.3.0
-jmespath==0.10.0
-certifi==2025.10.5
-charset-normalizer==3.4.4
-idna==3.11
-urllib3==2.5.0
-tzdata==2025.2
-pytz==2025.2
+pyarrow==12.0.1
+pycparser==2.23
+pycryptodome==3.23.0
 python-dateutil==2.9.0.post0
-gast==0.6.0
-modelscope==1.12.0
+pytz==2025.2
+PyYAML==6.0.3
+requests==2.32.5
+scipy==1.15.3
+simplejson==3.20.2
+six==1.17.0
+sortedcontainers==2.4.0
+tomli==2.3.0
+tqdm==4.67.1
+typing_extensions==4.15.0
+tzdata==2025.2
+urllib3==2.5.0
+xxhash==3.6.0
 yapf==0.43.0
-addict==2.4.0
+yarl==1.22.0
 
-# Optional plotting backend fix (ensures matplotlib works on headless VMs)
-pyqt5==5.15.11
+# Machine learning + deep learning
+torch==2.5.0
+torchvision==0.20.0
+torchaudio==2.5.0
+scikit-learn==1.5.2
+
+# Visualization
+matplotlib==3.9.2
+seaborn==0.13.2
+opencv-python==4.10.0.84
+
+# Optional (for optical flow & video utils)
+moviepy==1.0.3
