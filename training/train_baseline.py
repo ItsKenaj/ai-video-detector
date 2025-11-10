@@ -5,6 +5,7 @@ import torchvision.models as models
 import matplotlib.pyplot as plt
 from sklearn.metrics import roc_auc_score
 from pathlib import Path
+from tqdm import tqdm
 from dataset_loader import FrameFeatureDataset
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -27,8 +28,8 @@ def train():
     train_size = len(dataset) - val_size
     train_ds, val_ds = random_split(dataset, [train_size, val_size])
 
-    train_dl = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True)
-    val_dl = DataLoader(val_ds, batch_size=BATCH_SIZE)
+    train_dl = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True, num_workers=2)
+    val_dl = DataLoader(val_ds, batch_size=BATCH_SIZE, num_workers=2)
 
     model = get_model().to(DEVICE)
     criterion = nn.BCEWithLogitsLoss()
@@ -41,8 +42,9 @@ def train():
 
     for epoch in range(EPOCHS):
         model.train()
-        epoch_loss = 0
-        for x, y in train_dl:
+        epoch_loss = 0.0
+        print(f"\n🟡 Epoch {epoch+1}/{EPOCHS} — Training...")
+        for x, y in tqdm(train_dl, desc=f"Training epoch {epoch+1}", ncols=80):
             x, y = x.to(DEVICE), y.to(DEVICE).unsqueeze(1)
             optimizer.zero_grad()
             logits = model(x)
@@ -51,13 +53,15 @@ def train():
             optimizer.step()
             epoch_loss += loss.item()
 
-        train_losses.append(epoch_loss / len(train_dl))
+        train_loss = epoch_loss / len(train_dl)
+        train_losses.append(train_loss)
 
         # Validation
+        print(f"🔵 Epoch {epoch+1}/{EPOCHS} — Validating...")
         model.eval()
-        val_loss, all_y, all_pred = 0, [], []
+        val_loss, all_y, all_pred = 0.0, [], []
         with torch.no_grad():
-            for x, y in val_dl:
+            for x, y in tqdm(val_dl, desc=f"Validating epoch {epoch+1}", ncols=80):
                 x, y = x.to(DEVICE), y.to(DEVICE).unsqueeze(1)
                 logits = model(x)
                 loss = criterion(logits, y)
@@ -65,28 +69,31 @@ def train():
                 val_loss += loss.item()
                 all_y.extend(y.cpu().numpy().ravel())
                 all_pred.extend(preds)
-        val_losses.append(val_loss / len(val_dl))
+
+        val_loss /= len(val_dl)
         auc = roc_auc_score(all_y, all_pred)
+        val_losses.append(val_loss)
         val_aucs.append(auc)
 
-        print(f"Epoch {epoch+1}/{EPOCHS} | Train Loss: {train_losses[-1]:.4f} | Val Loss: {val_losses[-1]:.4f} | AUC: {auc:.3f}")
+        print(f"✅ Epoch {epoch+1}/{EPOCHS} | Train Loss: {train_loss:.4f} | "
+              f"Val Loss: {val_loss:.4f} | AUC: {auc:.3f}")
 
-        # Save model
-        ckpt_path = Path("results/checkpoints")
-        ckpt_path.mkdir(parents=True,exist_ok=True)
-        torch.save(model.state_dict(), ckpt_path / "baseline_resnet18.pt")
+    # Save final model + plot
+    ckpt_path = Path("results/checkpoints")
+    ckpt_path.mkdir(parents=True, exist_ok=True)
+    torch.save(model.state_dict(), ckpt_path / "baseline_resnet18.pt")
 
-        # Plot AUC Curve
-        plt.figure()
-        plt.plot(range(1, EPOCHS+1), val_aucs, label="Val AUC")
-        plt.xlabel("Epoch")
-        plt.ylabel("AUC")
-        plt.title("Baseline ResNet18 - Real vs Synthetic")
-        plt.legend()
-        plt.savefig(results_dir / "roc_baseline.png", dpi=150)
-        plt.close()
+    plt.figure()
+    plt.plot(range(1, EPOCHS + 1), val_aucs, label="Val AUC")
+    plt.xlabel("Epoch")
+    plt.ylabel("AUC")
+    plt.title("Baseline ResNet18 - Real vs Synthetic")
+    plt.legend()
+    plt.savefig(results_dir / "roc_baseline.png", dpi=150)
+    plt.close()
 
-        print("\n Training complete. Model and ROC curve saved.")
+    print("\n✅ Training complete. Model and ROC curve saved.")
+
 
 if __name__ == "__main__":
     train()

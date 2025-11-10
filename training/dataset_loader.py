@@ -3,6 +3,7 @@ from torch.utils.data import Dataset
 import numpy as np
 from pathlib import Path
 from PIL import Image
+import cv2
 
 class FrameFeatureDataset(Dataset):
     """
@@ -22,7 +23,6 @@ class FrameFeatureDataset(Dataset):
 
             for frame_path in frame_root.rglob("frame_*.jpg"):
                 base = frame_path.stem.replace("frame_", "")
-                # keep relative structure
                 rel_parent = frame_path.parent.relative_to(frame_root)
                 fft_path = fft_root / rel_parent / f"frame_{base}_fft.npy"
                 res_path = res_root / rel_parent / f"frame_{base}_residual.npy"
@@ -38,26 +38,27 @@ class FrameFeatureDataset(Dataset):
     def __getitem__(self, idx):
         frame_path, fft_path, res_path, label = self.samples[idx]
 
-        # Load data
-        rgb = np.array(Image.open(frame_path).convert("RGB")).astype(np.float32) / 255.0
+        if idx % 200 == 0:
+            print(f"[Dataset] Loading sample {idx+1}/{len(self.samples)}: {frame_path}")
+
+        # Load RGB frame
+        rgb = Image.open(frame_path).convert("RGB").resize((224, 224))
+        rgb = np.array(rgb).astype(np.float32) / 255.0
+
+        # Load FFT + residual maps
         fft = np.load(fft_path).astype(np.float32)
         res = np.load(res_path).astype(np.float32)
-
-        # Resize everything to (224, 224)
-        import cv2
-        rgb = cv2.resize(rgb, (224, 224), interpolation=cv2.INTER_AREA)
         fft = cv2.resize(fft, (224, 224), interpolation=cv2.INTER_AREA)
         res = cv2.resize(res, (224, 224), interpolation=cv2.INTER_AREA)
 
-        # Stack 5 channels (3 RGB + 1 FFT + 1 Residual)
+        # Stack 5 channels: RGB(3) + FFT(1) + Residual(1)
         x = np.concatenate([rgb, fft[..., None], res[..., None]], axis=2)
-        x = np.transpose(x, (2, 0, 1))  # → C×H×W
-
+        x = np.transpose(x, (2, 0, 1))  # C×H×W
         x = torch.from_numpy(x).float()
+
         y = torch.tensor(label, dtype=torch.float32)
 
         if self.transform:
             x = self.transform(x)
 
         return x, y
-
