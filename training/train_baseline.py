@@ -43,7 +43,7 @@ def train():
     for epoch in range(EPOCHS):
         model.train()
         epoch_loss = 0.0
-        print(f"\n🟡 Epoch {epoch+1}/{EPOCHS} — Training...")
+        print(f"\nEpoch {epoch+1}/{EPOCHS} — Training...")
         for x, y in tqdm(train_dl, desc=f"Training epoch {epoch+1}", ncols=80):
             x, y = x.to(DEVICE), y.to(DEVICE).unsqueeze(1)
             optimizer.zero_grad()
@@ -57,7 +57,7 @@ def train():
         train_losses.append(train_loss)
 
         # Validation
-        print(f"🔵 Epoch {epoch+1}/{EPOCHS} — Validating...")
+        print(f"Epoch {epoch+1}/{EPOCHS} — Validating...")
         model.eval()
         val_loss, all_y, all_pred = 0.0, [], []
         with torch.no_grad():
@@ -75,7 +75,7 @@ def train():
         val_losses.append(val_loss)
         val_aucs.append(auc)
 
-        print(f"✅ Epoch {epoch+1}/{EPOCHS} | Train Loss: {train_loss:.4f} | "
+        print(f"Epoch {epoch+1}/{EPOCHS} | Train Loss: {train_loss:.4f} | "
               f"Val Loss: {val_loss:.4f} | AUC: {auc:.3f}")
 
     # Save final model + plot
@@ -92,7 +92,7 @@ def train():
     plt.savefig(results_dir / "roc_baseline.png", dpi=150)
     plt.close()
 
-    print("\n✅ Training complete. Model and ROC curve saved.")
+    print("\nTraining complete. Model and ROC curve saved.")
 
 
 if __name__ == "__main__":

@@ -56,7 +56,7 @@ def visualize_sample(frame_dir, fft_dir, res_dir, label, subset, frame_idx=0):
     plt.tight_layout()
     plt.savefig(out_path, dpi=150)
     plt.close()
-    print(f"✅ Saved visualization: {out_path}")
+    print(f"Saved visualization: {out_path}")
 
 def main():
     print("=== Visualizing extracted features ===")
@@ -65,13 +65,13 @@ def main():
     for label in labels:
         base_dir = FEATURES_DIR / "frames" / label
         if not base_dir.exists():
-            print(f"⚠️  No frames found for '{label}'")
+            print(f"No frames found for '{label}'")
             continue
 
         # Find all nested subdirectories containing frames
         all_subsets = [p for p in base_dir.rglob("frame_00000.jpg")]
         if not all_subsets:
-            print(f"⚠️  No frame_00000.jpg found under {base_dir}")
+            print(f"No frame_00000.jpg found under {base_dir}")
             continue
 
         sample_frame = random.choice(all_subsets)
@@ -85,7 +85,7 @@ def main():
 
         visualize_sample(subset_dir, fft_dir, res_dir, label, subset_name, frame_idx=0)
 
-    print("\n✅ Visualization complete. Check data/visualizations/ for saved images.")
+    print("\nVisualization complete. Check data/visualizations/ for saved images.")
 
 if __name__ == "__main__":
     main()
