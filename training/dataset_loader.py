@@ -39,19 +39,19 @@ class FrameFeatureDataset(Dataset):
         frame_path, fft_path, res_path, label = self.samples[idx]
 
         # Load data
-        rgb = np.array(Image.open(frame_path)).astype(np.float32) / 255.0
+        rgb = np.array(Image.open(frame_path).convert("RGB")).astype(np.float32) / 255.0
         fft = np.load(fft_path).astype(np.float32)
         res = np.load(res_path).astype(np.float32)
 
-        # Ensure H×W shapes match
-        h, w = rgb.shape[:2]
-        fft = np.resize(fft, (h, w))
-        res = np.resize(res, (h, w))
+        # Resize everything to (224, 224)
+        import cv2
+        rgb = cv2.resize(rgb, (224, 224), interpolation=cv2.INTER_AREA)
+        fft = cv2.resize(fft, (224, 224), interpolation=cv2.INTER_AREA)
+        res = cv2.resize(res, (224, 224), interpolation=cv2.INTER_AREA)
 
         # Stack 5 channels (3 RGB + 1 FFT + 1 Residual)
-        x = np.concatenate(
-            [rgb, fft[..., None], res[..., None]], axis=2
-        ).transpose(2, 0, 1)  # → C×H×W
+        x = np.concatenate([rgb, fft[..., None], res[..., None]], axis=2)
+        x = np.transpose(x, (2, 0, 1))  # → C×H×W
 
         x = torch.from_numpy(x).float()
         y = torch.tensor(label, dtype=torch.float32)
@@ -60,3 +60,4 @@ class FrameFeatureDataset(Dataset):
             x = self.transform(x)
 
         return x, y
+
