@@ -27,17 +27,20 @@ def check_disk(min_free_gb=10.0):
     if free_gb < min_free_gb:
         raise RuntimeError(f"Insufficient space (< {min_free_gb} GB). Aborting.")
 
-def download_real_kinetics(n=50, overwrite=False, throttle=0.0):
+def download_real_kinetics(n=100, overwrite=False, throttle=0.0):
+    """Download n real videos from the full Kinetics dataset."""
     REAL_DIR.mkdir(parents=True, exist_ok=True)
     print(f"[real] Downloading {n} videos from nateraw/kinetics (streaming)…")
+
+    # use the *full* Kinetics dataset, not kinetics-mini
     ds = load_dataset("nateraw/kinetics", split="train", streaming=True)
+
     count = 0
     for i, ex in enumerate(ds):
         if count >= n:
             break
         out_path = REAL_DIR / f"sample_{i:04d}.mp4"
         if out_path.exists() and not overwrite:
-            # already have a file for this index; skip without counting
             continue
         try:
             data = ex["video"]
