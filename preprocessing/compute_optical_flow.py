@@ -3,18 +3,18 @@ import numpy as np
 from pathlib import Path
 from tqdm import tqdm
 
-
 def compute_dense_flow(frames_dir, save_dir):
     """
     Computes dense optical flow between consecutive frames.
     Saves each flow as an .npy file: [H, W, 2] (dx, dy)
     """
-    frames = sorted(Path(frames_dir).glob("frame_*.jpg"))
+    frames_dir = Path(frames_dir)    # fix: ensure Path object
+    save_dir = Path(save_dir)
+    frames = sorted(frames_dir.glob("frame_*.jpg"))
     if len(frames) < 2:
         print(f"Skipping {frames_dir} — not enough frames.")
         return
 
-    save_dir = Path(save_dir)
     save_dir.mkdir(parents=True, exist_ok=True)
 
     fb_params = dict(
