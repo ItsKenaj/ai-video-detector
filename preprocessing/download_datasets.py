@@ -20,12 +20,14 @@ DEEPACTION_SOURCES = [
     "VideoPoet",
 ]
 
+
 def check_disk(min_free_gb=10.0):
     total, used, free = shutil.disk_usage("/")
     free_gb = free / (1024**3)
     print(f"[disk] Free space: {free_gb:.2f} GB")
     if free_gb < min_free_gb:
         raise RuntimeError(f"Insufficient space (< {min_free_gb} GB). Aborting.")
+
 
 def download_real_kinetics(n=100, overwrite=False, throttle=0.0):
     """Download n real videos from the full Kinetics dataset."""
@@ -55,6 +57,7 @@ def download_real_kinetics(n=100, overwrite=False, throttle=0.0):
             print(f"  [real] skip index {i}: {e}")
             continue
     print(f"[real] Finished: {count} videos in {REAL_DIR}")
+
 
 def download_deepaction(per_source=2, overwrite=False, throttle=0.2, shuffle=True, seed=1337):
     SYNTH_DIR.mkdir(parents=True, exist_ok=True)
@@ -98,6 +101,7 @@ def download_deepaction(per_source=2, overwrite=False, throttle=0.2, shuffle=Tru
         print(f"  [syn] {src}: {fetched_src}/{per_source} saved.")
     print(f"[syn] Finished: {total_fetched} total synthetic videos in {SYNTH_DIR}")
 
+
 def parse_args():
     p = argparse.ArgumentParser(description="Download real + synthetic videos (balanced).")
     p.add_argument("--n-real", type=int, default=100, help="Number of real Kinetics videos")
@@ -107,6 +111,7 @@ def parse_args():
     p.add_argument("--throttle", type=float, default=0.2, help="Sleep seconds between downloads")
     p.add_argument("--no-shuffle", action="store_true", help="Do not shuffle DeepAction file list")
     return p.parse_args()
+
 
 if __name__ == "__main__":
     args = parse_args()
