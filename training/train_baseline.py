@@ -14,16 +14,16 @@ BATCH_SIZE = 16
 LR = 1e-4
 
 
-def get_model():
+def get_model(in_channels=5):
     model = models.resnet18(weights="IMAGENET1K_V1")
     # Modify first conv: 5 input channels (RGB + FFT + Residual)
-    model.conv1 = nn.Conv2d(5, 64, kernel_size=7, stride=2, padding=3, bias=False)
+    model.conv1 = nn.Conv2d(in_channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
     model.fc = nn.Linear(model.fc.in_features, 1)
     return model
 
 
-def train():
-    dataset = FrameFeatureDataset()
+def train(use_flow=False):
+    dataset = FrameFeatureDataset(use_flow=use_flow)
     val_size = int(0.2 * len(dataset))
     train_size = len(dataset) - val_size
     train_ds, val_ds = random_split(dataset, [train_size, val_size])
@@ -31,7 +31,7 @@ def train():
     train_dl = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True, num_workers=2)
     val_dl = DataLoader(val_ds, batch_size=BATCH_SIZE, num_workers=2)
 
-    model = get_model().to(DEVICE)
+    model = get_model(in_channels=7 if use_flow else 5).to(DEVICE)
     criterion = nn.BCEWithLogitsLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=LR)
 
