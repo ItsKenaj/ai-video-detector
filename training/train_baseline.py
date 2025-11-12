@@ -96,4 +96,13 @@ def train(use_flow=False):
 
 
 if __name__ == "__main__":
-    train()
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Train baseline or flow-augmented model")
+    parser.add_argument("--use-flow", action="store_true",
+                        help="Include optical flow channels during training")
+    args = parser.parse_args()
+
+    print(f"Starting training | Flow enabled: {args.use_flow}")
+    train(use_flow=args.use_flow)
+
