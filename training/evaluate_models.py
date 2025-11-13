@@ -4,7 +4,7 @@ import numpy as np
 from tqdm import tqdm
 from pathlib import Path
 from sklearn.metrics import roc_auc_score
-from training.dataset_loader import FrameFeatureDataset
+from dataset_loader import FrameFeatureDataset
 import torchvision.models as models
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
