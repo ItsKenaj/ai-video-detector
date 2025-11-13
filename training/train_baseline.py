@@ -81,7 +81,7 @@ def train(use_flow=False):
     # Save final model + plot
     ckpt_path = Path("results/checkpoints")
     ckpt_path.mkdir(parents=True, exist_ok=True)
-    model_pt = "baseline_resnet18_flow.pt" if use_flow else "baseline_resnet18.pt"
+    model_pt = "resnet18_flow.pt" if use_flow else "resnet18.pt"
     torch.save(model.state_dict(), ckpt_path / model_pt)
 
     plt.figure()
