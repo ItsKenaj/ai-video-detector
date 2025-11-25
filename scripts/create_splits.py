@@ -2,38 +2,40 @@ import json
 import random
 import os
 
-MANIFEST_PATH = "splits/video_manifest.json"
-OUTPUT_DIR = "splits"
+MANIFEST = "splits/video_manifest.json"
+OUT_DIR = "splits"
 
-os.makedirs(OUTPUT_DIR, exist_ok=True)
+os.makedirs(OUT_DIR, exist_ok=True)
 
-# Load manifest
-with open(MANIFEST_PATH, "r") as f:
+with open(MANIFEST, "r") as f:
     data = json.load(f)
 
-# Shuffle deterministically
+# Remove duplicates by video_id
+unique = {}
+for item in data:
+    unique[item["video_id"]] = item
+
+data = list(unique.values())
+print("Unique videos:", len(data))
+
+# Shuffle once
 random.seed(42)
 random.shuffle(data)
 
 N = len(data)
-train_end = int(0.70 * N)
-val_end = int(0.85 * N)
+train = data[:int(0.70 * N)]
+val   = data[int(0.70 * N):int(0.85 * N)]
+test  = data[int(0.85 * N):]
 
-train = data[:train_end]
-val = data[train_end:val_end]
-test = data[val_end:]
+def write_file(name, items):
+    with open(os.path.join(OUT_DIR, name), "w") as f:
+        for x in items:
+            f.write(x["video_id"] + "\n")
 
-def write_list(filename, subset):
-    with open(os.path.join(OUTPUT_DIR, filename), "w") as f:
-        for item in subset:
-            f.write(item["video_id"] + "\n")
+write_file("train_videos.txt", train)
+write_file("val_videos.txt", val)
+write_file("test_videos.txt", test)
 
-write_list("train_videos.txt", train)
-write_list("val_videos.txt", val)
-write_list("test_videos.txt", test)
-
-print("Total videos:", N)
-print("Train videos:", len(train))
-print("Val videos:", len(val))
-print("Test videos:", len(test))
-print("Wrote split files to:", OUTPUT_DIR)
+print("Train:", len(train))
+print("Val:", len(val))
+print("Test:", len(test))
