@@ -46,9 +46,13 @@ class VideoSplitFrameDataset(Dataset):
             label = video_entry["label"]
 
             frame_root = Path(video_dir)
-            fft_root = Path(video_dir.replace("/frames/", "/fft/"))  # replace root prefixes
-            res_root = Path(video_dir.replace("/frames/", "/residuals/"))
-            flow_root = Path(video_dir.replace("/frames/", "/flow/"))
+
+            # relative path after frames/
+            rel = frame_root.relative_to("data/features/frames")
+
+            fft_root = Path("data/features/fft") / rel
+            res_root = Path("data/features/residuals") / rel
+            flow_root = Path("data/features/flow") / rel
 
             for frame_path in sorted(frame_root.glob("frame_*.jpg")):
                 base = frame_path.stem.replace("frame_", "")
