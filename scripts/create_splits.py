@@ -18,14 +18,34 @@ for item in data:
 data = list(unique.values())
 print("Unique videos:", len(data))
 
-# Shuffle once
-random.seed(42)
-random.shuffle(data)
+# -----------------------------------------------------------
+# Stratified split: ensure balanced real/synthetic in each set
+# -----------------------------------------------------------
+real_videos = [v for v in data if v["label"] == 0]
+synthetic_videos = [v for v in data if v["label"] == 1]
 
-N = len(data)
-train = data[:int(0.70 * N)]
-val   = data[int(0.70 * N):int(0.85 * N)]
-test  = data[int(0.85 * N):]
+random.seed(42)
+random.shuffle(real_videos)
+random.shuffle(synthetic_videos)
+
+def stratified_split(items, train_ratio=0.70, val_ratio=0.15):
+    """Split items into train/val/test with given ratios."""
+    n = len(items)
+    train_end = int(train_ratio * n)
+    val_end = int((train_ratio + val_ratio) * n)
+    return items[:train_end], items[train_end:val_end], items[val_end:]
+
+real_train, real_val, real_test = stratified_split(real_videos)
+syn_train, syn_val, syn_test = stratified_split(synthetic_videos)
+
+# Combine and shuffle within each split
+train = real_train + syn_train
+val = real_val + syn_val
+test = real_test + syn_test
+
+random.shuffle(train)
+random.shuffle(val)
+random.shuffle(test)
 
 def write_file(name, items):
     with open(os.path.join(OUT_DIR, name), "w") as f:
@@ -36,6 +56,12 @@ write_file("train_videos.txt", train)
 write_file("val_videos.txt", val)
 write_file("test_videos.txt", test)
 
-print("Train:", len(train))
-print("Val:", len(val))
-print("Test:", len(test))
+# Print split statistics
+def count_labels(items):
+    real = sum(1 for x in items if x["label"] == 0)
+    syn = sum(1 for x in items if x["label"] == 1)
+    return real, syn
+
+print(f"\nTrain: {len(train)} videos (real: {count_labels(train)[0]}, synthetic: {count_labels(train)[1]})")
+print(f"Val:   {len(val)} videos (real: {count_labels(val)[0]}, synthetic: {count_labels(val)[1]})")
+print(f"Test:  {len(test)} videos (real: {count_labels(test)[0]}, synthetic: {count_labels(test)[1]})")

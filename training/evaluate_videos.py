@@ -35,20 +35,25 @@ def evaluate_video_level(model, use_flow):
     video_scores = {}
     video_labels = {}
 
-    loader = torch.utils.data.DataLoader(test_ds, batch_size=16, num_workers=2)
+    # IMPORTANT: shuffle=False to preserve sample ordering for correct index tracking
+    loader = torch.utils.data.DataLoader(test_ds, batch_size=16, num_workers=0, shuffle=False)
 
+    sample_idx = 0  # Track which sample we're processing
     with torch.no_grad():
         for x, y in tqdm(loader, desc="Evaluating (video-level)"):
             x = x.to(DEVICE)
             logits = model(x)
             probs = torch.sigmoid(logits).cpu().numpy().ravel()
 
-            for (frame_path, _, _, _, label), prob in zip(test_ds.samples, probs):
+            # Map predictions to correct samples using tracked index
+            for prob in probs:
+                frame_path, _, _, _, label = test_ds.samples[sample_idx]
                 video_dir = str(Path(frame_path).parent)
                 if video_dir not in video_scores:
                     video_scores[video_dir] = []
                     video_labels[video_dir] = label
                 video_scores[video_dir].append(prob)
+                sample_idx += 1
 
     # Mean aggregation per video
     final_scores = []
