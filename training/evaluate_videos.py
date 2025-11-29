@@ -19,7 +19,7 @@ def load_model(weights_path, in_channels):
     model.conv1 = nn.Conv2d(in_channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
     model.fc = nn.Linear(model.fc.in_features, 1)
 
-    state = torch.load(weights_path, map_location=DEVICE)
+    state = torch.load(weights_path, map_location=DEVICE, weights_only=True)
     model.load_state_dict(state)
 
     model.to(DEVICE)
@@ -27,9 +27,9 @@ def load_model(weights_path, in_channels):
     return model
 
 
-def evaluate_video_level(model, use_flow):
+def evaluate_video_level(model, use_flow=False, rgb_only=False):
     # Load ONLY test split
-    test_ds = VideoSplitFrameDataset(split="test", use_flow=use_flow)
+    test_ds = VideoSplitFrameDataset(split="test", use_flow=use_flow, rgb_only=rgb_only)
 
     # group frame predictions by video directory
     video_scores = {}
@@ -101,17 +101,33 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", type=str, required=True,
                         help="Name of checkpoint inside results/checkpoints/")
-    parser.add_argument("--use-flow", action="store_true")
+    parser.add_argument("--use-flow", action="store_true", help="Model uses optical flow (7 channels)")
+    parser.add_argument("--rgb-only", action="store_true", help="Model uses only RGB (3 channels)")
     args = parser.parse_args()
+
+    # Validate flags
+    if args.use_flow and args.rgb_only:
+        raise ValueError("Cannot use both --use-flow and --rgb-only. Choose one.")
 
     ckpt_path = Path("results/checkpoints") / args.model
     assert ckpt_path.exists(), f"Checkpoint not found: {ckpt_path}"
 
-    in_channels = 7 if args.use_flow else 5
+    # Determine input channels
+    if args.rgb_only:
+        in_channels = 3
+    elif args.use_flow:
+        in_channels = 7
+    else:
+        in_channels = 5
+    
     model = load_model(ckpt_path, in_channels=in_channels)
 
-    print(f"\nEvaluating video-level performance for {args.model}\n")
-    auc, acc, cm, scores, labels = evaluate_video_level(model, use_flow=args.use_flow)
+    mode = "RGB-only (3ch)" if args.rgb_only else ("Flow (7ch)" if args.use_flow else "Baseline (5ch)")
+    print(f"\nEvaluating video-level performance for {args.model} [{mode}]\n")
+    
+    auc, acc, cm, scores, labels = evaluate_video_level(
+        model, use_flow=args.use_flow, rgb_only=args.rgb_only
+    )
 
     print(f"VIDEO AUC: {auc:.4f}")
     print(f"VIDEO ACC: {acc:.4f}")

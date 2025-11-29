@@ -14,7 +14,7 @@ def load_model(weights_path, in_channels):
     model = models.resnet18(weights=None)
     model.conv1 = nn.Conv2d(in_channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
     model.fc = nn.Linear(model.fc.in_features, 1)
-    model.load_state_dict(torch.load(weights_path, map_location=DEVICE))
+    model.load_state_dict(torch.load(weights_path, map_location=DEVICE, weights_only=True))
     model.to(DEVICE).eval()
     return model
 

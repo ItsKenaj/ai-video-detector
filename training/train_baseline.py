@@ -23,12 +23,12 @@ def get_model(in_channels=5):
     return model
 
 
-def train(use_flow=False):
+def train(use_flow=False, rgb_only=False):
     # -------------------------------
     # Load split-aware datasets
     # -------------------------------
-    train_ds = VideoSplitFrameDataset(split="train", use_flow=use_flow)
-    val_ds   = VideoSplitFrameDataset(split="val",   use_flow=use_flow)
+    train_ds = VideoSplitFrameDataset(split="train", use_flow=use_flow, rgb_only=rgb_only)
+    val_ds   = VideoSplitFrameDataset(split="val",   use_flow=use_flow, rgb_only=rgb_only)
 
     train_dl = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True, num_workers=2)
     val_dl   = DataLoader(val_ds,   batch_size=BATCH_SIZE, num_workers=2)
@@ -36,7 +36,12 @@ def train(use_flow=False):
     # -------------------------------
     # Model + loss + optimizer
     # -------------------------------
-    in_channels = 7 if use_flow else 5
+    if rgb_only:
+        in_channels = 3
+    elif use_flow:
+        in_channels = 7
+    else:
+        in_channels = 5
     model = get_model(in_channels=in_channels).to(DEVICE)
     criterion = nn.BCEWithLogitsLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=LR)
@@ -97,26 +102,42 @@ def train(use_flow=False):
     # -------------------------------
     ckpt_dir = Path("results/checkpoints")
     ckpt_dir.mkdir(parents=True, exist_ok=True)
-    model_file = "resnet18_flow.pt" if use_flow else "resnet18.pt"
+    
+    if rgb_only:
+        model_file = "resnet18_rgb.pt"
+        plot_title = "ResNet18 RGB-Only - Real vs Synthetic"
+    elif use_flow:
+        model_file = "resnet18_flow.pt"
+        plot_title = "ResNet18 + Flow (7ch) - Real vs Synthetic"
+    else:
+        model_file = "resnet18.pt"
+        plot_title = "ResNet18 Baseline (5ch) - Real vs Synthetic"
+    
     torch.save(model.state_dict(), ckpt_dir / model_file)
 
     plt.figure()
     plt.plot(range(1, EPOCHS + 1), val_aucs, label="Val AUC")
     plt.xlabel("Epoch")
     plt.ylabel("AUC")
-    plt.title("Baseline ResNet18 - Real vs Synthetic (Leakage-Free)")
+    plt.title(plot_title)
     plt.legend()
-    plt.savefig(results_dir / "roc_baseline.png", dpi=150)
+    plt.savefig(results_dir / f"roc_{model_file.replace('.pt', '')}.png", dpi=150)
     plt.close()
 
-    print("\nTraining complete. Model and ROC curve saved.")
+    print(f"\nTraining complete. Saved {model_file} and training plot.")
 
 
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser(description="Train baseline (RGB+FFT+residual) or +flow model")
-    parser.add_argument("--use-flow", action="store_true", help="Include optical flow in training")
+    parser = argparse.ArgumentParser(description="Train ResNet18 for AI video detection")
+    parser.add_argument("--use-flow", action="store_true", help="Include optical flow (7 channels)")
+    parser.add_argument("--rgb-only", action="store_true", help="Use only RGB frames (3 channels) - ablation baseline")
     args = parser.parse_args()
 
-    print(f"Starting training | Flow enabled: {args.use_flow}")
-    train(use_flow=args.use_flow)
+    # Validate flags
+    if args.use_flow and args.rgb_only:
+        raise ValueError("Cannot use both --use-flow and --rgb-only. Choose one.")
+
+    mode = "RGB-only (3ch)" if args.rgb_only else ("Flow (7ch)" if args.use_flow else "Baseline (5ch)")
+    print(f"Starting training | Mode: {mode}")
+    train(use_flow=args.use_flow, rgb_only=args.rgb_only)

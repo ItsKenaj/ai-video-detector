@@ -10,7 +10,7 @@ def load_model(weights_path="results/checkpoints/baseline_resnet18.pt"):
     model = models.resnet18(weights=None)
     model.conv1 = torch.nn.Conv2d(5, 64, kernel_size=7, stride=2, padding=3, bias=False)
     model.fc = torch.nn.Linear(model.fc.in_features, 1)
-    model.load_state_dict(torch.load(weights_path, map_location=DEVICE))
+    model.load_state_dict(torch.load(weights_path, map_location=DEVICE, weights_only=True))
     model.to(DEVICE).eval()
     return model
 
