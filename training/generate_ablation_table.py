@@ -13,20 +13,26 @@ EVAL_DIR = Path("results/video_eval")
 # Define the models and their properties
 MODELS = [
     {
+        "name": "logreg_baseline",
+        "display": "Logistic Regression",
+        "channels": "8*",
+        "description": "Simple baseline with hand-crafted features"
+    },
+    {
         "name": "resnet18_rgb",
-        "display": "RGB-only",
+        "display": "ResNet18 (RGB-only)",
         "channels": 3,
-        "description": "Baseline (no forensic features)"
+        "description": "Deep baseline (no forensic features)"
     },
     {
         "name": "resnet18",
-        "display": "RGB + FFT + Residual",
+        "display": "ResNet18 (RGB+FFT+Res)",
         "channels": 5,
         "description": "Main model with frequency & noise features"
     },
     {
         "name": "resnet18_flow",
-        "display": "RGB + FFT + Residual + Flow",
+        "display": "ResNet18 (RGB+FFT+Res+Flow)",
         "channels": 7,
         "description": "Full model with temporal consistency"
     },
@@ -39,7 +45,12 @@ def load_metrics(model_name):
     if not metrics_path.exists():
         return None
     with open(metrics_path) as f:
-        return json.load(f)
+        data = json.load(f)
+    # Handle different metric key names (logreg uses test_auc, others use auc)
+    if "test_auc" in data:
+        data["auc"] = data["test_auc"]
+        data["accuracy"] = data["test_accuracy"]
+    return data
 
 
 def main():
@@ -48,12 +59,13 @@ def main():
     print("=" * 70)
     
     # Header
-    print(f"\n{'Model':<30} {'Channels':<10} {'AUC':<10} {'Accuracy':<10}")
-    print("-" * 60)
+    print(f"\n{'Model':<35} {'Channels':<10} {'AUC':<10} {'Accuracy':<10}")
+    print("-" * 65)
     
     results = []
     for model in MODELS:
         metrics = load_metrics(model["name"])
+        channels_str = str(model["channels"])
         if metrics:
             auc = metrics.get("auc", 0)
             acc = metrics.get("accuracy", 0)
@@ -63,11 +75,11 @@ def main():
                 "auc": auc,
                 "accuracy": acc
             })
-            print(f"{model['display']:<30} {model['channels']:<10} {auc:<10.4f} {acc:<10.4f}")
+            print(f"{model['display']:<35} {channels_str:<10} {auc:<10.4f} {acc:<10.4f}")
         else:
-            print(f"{model['display']:<30} {model['channels']:<10} {'N/A':<10} {'N/A':<10}")
+            print(f"{model['display']:<35} {channels_str:<10} {'N/A':<10} {'N/A':<10}")
     
-    print("-" * 60)
+    print("-" * 65)
     
     # Analysis
     if len(results) >= 2:
@@ -77,10 +89,16 @@ def main():
         best = max(results, key=lambda x: x["auc"])
         print(f"  Best AUC: {best['name']} ({best['auc']:.4f})")
         
-        # Compare RGB-only vs main model
-        rgb_only = next((r for r in results if r["channels"] == 3), None)
+        # Compare LogReg vs deep models
+        logreg = next((r for r in results if "Logistic" in r["name"]), None)
         main_model = next((r for r in results if r["channels"] == 5), None)
         
+        if logreg and main_model:
+            improvement = main_model["auc"] - logreg["auc"]
+            print(f"  Deep learning improvement: +{improvement:.4f} AUC over LogReg baseline")
+        
+        # Compare RGB-only vs main model
+        rgb_only = next((r for r in results if r["channels"] == 3), None)
         if rgb_only and main_model:
             improvement = main_model["auc"] - rgb_only["auc"]
             print(f"  FFT + Residual improvement: +{improvement:.4f} AUC over RGB-only")
@@ -96,21 +114,25 @@ def main():
     
     # LaTeX table output for paper
     print("\n📝 LATEX TABLE (copy to paper):")
-    print("-" * 60)
+    print("-" * 65)
     print(r"\begin{table}[h]")
     print(r"\centering")
     print(r"\begin{tabular}{lccc}")
     print(r"\toprule")
-    print(r"Model & Channels & AUC & Accuracy \\")
+    print(r"Model & Input & AUC & Accuracy \\")
     print(r"\midrule")
     for r in results:
-        print(f"{r['name']} & {r['channels']} & {r['auc']:.4f} & {r['accuracy']:.4f} \\\\")
+        channels_str = str(r['channels'])
+        # Escape asterisk for LaTeX if present
+        if '*' in channels_str:
+            channels_str = channels_str.replace('*', '$^*$')
+        print(f"{r['name']} & {channels_str} & {r['auc']:.4f} & {r['accuracy']:.4f} \\\\")
     print(r"\bottomrule")
     print(r"\end{tabular}")
-    print(r"\caption{Ablation study results for AI-generated video detection.}")
+    print(r"\caption{Ablation study results for AI-generated video detection. $^*$LogReg uses 8 hand-crafted features.}")
     print(r"\label{tab:ablation}")
     print(r"\end{table}")
-    print("-" * 60)
+    print("-" * 65)
     
     # Save results to JSON
     output_path = Path("results/ablation_results.json")
