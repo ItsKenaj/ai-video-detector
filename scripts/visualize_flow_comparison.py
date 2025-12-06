@@ -7,7 +7,10 @@ Creates a grid showing frames and flow for real vs different AI generators.
 import cv2
 import numpy as np
 from pathlib import Path
+import matplotlib
+matplotlib.use('Agg')  # Use non-interactive backend
 import matplotlib.pyplot as plt
+from PIL import Image
 
 def load_flow_as_image(flow_path):
     """Convert optical flow to HSV color visualization."""

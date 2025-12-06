@@ -10,9 +10,12 @@ Outputs:
 
 import cv2
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')  # Use non-interactive backend
 import matplotlib.pyplot as plt
 from pathlib import Path
 import shutil
+from PIL import Image
 
 
 def generate_fft_comparison():
@@ -64,8 +67,14 @@ def generate_fft_comparison():
     
     out_path = Path('data/visualizations/fft_comparison.png')
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    plt.savefig(out_path, dpi=150, bbox_inches='tight')
-    plt.close()
+    
+    # Save with PIL to ensure proper PNG format
+    fig.savefig(out_path, dpi=150, bbox_inches='tight', format='png')
+    plt.close(fig)
+    
+    # Re-save with PIL to fix any format issues
+    img = Image.open(out_path)
+    img.save(out_path, 'PNG')
     
     print(f"  Saved: {out_path}")
 
