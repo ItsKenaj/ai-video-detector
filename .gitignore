@@ -8,9 +8,6 @@ results/**
 # Ignore virtual environment
 venv/
 
-# Ignore report (kept local only)
-report/
-
 # Ignore temporary and cache files
 __pycache__/
 *.pyc
