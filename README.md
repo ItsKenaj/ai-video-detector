@@ -1,88 +1,161 @@
 # AI Video Detector
-Detecting AI-Generated Videos Using Spatio-Temporal Forensics  
+
+**Detecting AI-Generated Videos Using Spatial and Temporal Cues**  
 *CS229: Machine Learning — Stanford University*  
-Author: **Kenaj Washington**
+Author: **Kenaj Washington** (kkenajj@stanford.edu)
 
 ---
 
 ## Overview
-This project aims to distinguish **AI-generated videos** from **real human-captured videos** using spatial–temporal forensics.  
-It combines deep learning, frequency-domain analysis, and motion features to capture subtle generative artifacts that modern diffusion-based video models produce.
+
+This project distinguishes **AI-generated videos** from **real videos** using frequency-domain forensics. We combine RGB frames with FFT magnitude spectra and high-frequency residual maps, feeding them into a modified ResNet-18. Our best model achieves **97.9% AUC** on video-level classification.
+
+### Key Findings
+- FFT + residual features provide **+13.8% AUC** improvement over RGB-only
+- Optical flow features surprisingly **hurt** performance
+- Frequency-domain artifacts generalize across different generators
 
 ---
 
-## Objectives
-- Build a **baseline model** (ResNet-18 / ViT-tiny) for frame-level detection.  
-- Integrate **temporal cues** (optical flow, flicker, frequency residuals).  
-- Evaluate **robustness** under compression, noise, and re-encoding.  
-- Visualize **false positives/negatives** to interpret model reasoning.
+## Project Structure
+
+```
+ai-video-detector/
+├── data/
+│   ├── real/                    # Real videos (Kinetics)
+│   ├── synthetic/               # Synthetic videos (DeepAction)
+│   ├── features/                # Extracted features (frames, FFT, residuals, flow)
+│   └── visualizations/          # Generated figures
+├── preprocessing/
+│   ├── download_datasets.py     # Download real/synthetic videos
+│   ├── run_preprocessing.py     # Run full preprocessing pipeline
+│   ├── extract_frames.py        # Extract video frames
+│   ├── compute_fft.py           # Compute FFT magnitude spectra
+│   ├── compute_residuals.py     # Compute high-frequency residuals
+│   └── compute_optical_flow.py  # Compute dense optical flow
+├── scripts/
+│   ├── build_video_manifest.py  # Build video metadata manifest
+│   ├── create_splits.py         # Create train/val/test splits
+│   ├── generate_report_figures.py
+│   └── visualize_flow_comparison.py
+├── training/
+│   ├── dataset_loader.py        # PyTorch dataset for multimodal features
+│   ├── train_baseline.py        # Train ResNet-18 models
+│   ├── evaluate_videos.py       # Video-level evaluation
+│   ├── logreg_baseline.py       # Logistic regression baseline
+│   ├── generate_ablation_table.py
+│   ├── cross_generator_experiment.py
+│   └── single_generator_experiment.py
+├── inference/
+│   └── predict_video.py         # Inference on new videos
+├── utils/
+│   ├── config.py                # Configuration constants
+│   └── plot_metrics.py          # Plotting utilities
+├── report/
+│   ├── main.tex                 # LaTeX report
+│   └── Makefile                 # Compile report
+├── results/                     # Checkpoints, plots, evaluation results
+├── requirements.txt
+└── README.md
+```
+
+---
+
+## Quick Start
+
+### 1. Setup Environment
+```bash
+git clone https://github.com/ItsKenaj/ai-video-detector.git
+cd ai-video-detector
+python -m venv venv
+source venv/bin/activate  # or venv\Scripts\activate on Windows
+pip install -r requirements.txt
+```
+
+### 2. Download Data
+```bash
+python preprocessing/download_datasets.py --n-real 100 --per-source 15
+```
+
+### 3. Preprocess Videos
+```bash
+python preprocessing/run_preprocessing.py
+```
+
+### 4. Build Splits
+```bash
+python scripts/build_video_manifest.py
+python scripts/create_splits.py
+```
+
+### 5. Train Models
+```bash
+# Baseline (RGB + FFT + Residual)
+python -m training.train_baseline
+
+# With optical flow
+python -m training.train_baseline --use-flow
+
+# RGB only (ablation)
+python -m training.train_baseline --rgb-only
+```
+
+### 6. Evaluate
+```bash
+python -m training.evaluate_videos --model resnet18.pt
+python -m training.evaluate_videos --model resnet18_flow.pt --use-flow
+python -m training.evaluate_videos --model resnet18_rgb.pt --rgb-only
+```
+
+### 7. Generate Results Table
+```bash
+python -m training.generate_ablation_table
+```
+
+---
+
+## Results
+
+| Model | Channels | AUC | Accuracy |
+|-------|----------|-----|----------|
+| Logistic Regression | 8 (features) | 0.733 | 0.645 |
+| ResNet18 (RGB only) | 3 | 0.842 | 0.742 |
+| ResNet18 (RGB+FFT+Res) | 5 | **0.979** | **0.903** |
+| ResNet18 (+Flow) | 7 | 0.950 | 0.774 |
 
 ---
 
 ## Datasets
 
-| Dataset | Type | Description | Link |
-|----------|------|-------------|------|
-| **Kinetics-400 Subset** | Real | Natural videos of human activity. | [GitHub](https://github.com/cvdfoundation/kinetics-dataset) |
-| **DeepAction_v1** | Synthetic | 2,600 AI-generated videos from multiple diffusion models. | [Hugging Face](https://huggingface.co/datasets/faridlab/deepaction_v1) |
-| **SeeTrails AIGVDet v2.0.0** | Synthetic | Diffusion-based generated video dataset for detection tasks. | [Hugging Face](https://huggingface.co/kalpitbcontrails/seetrails_aigvdet_v2.0.0) |
-| **GenVideo-100K** | Synthetic | 100,000 text-to-video diffusion clips for generation/detection research. | [ModelScope](https://modelscope.cn/datasets/cccnju/GenVideo-100K) |
+| Dataset | Type | Description |
+|---------|------|-------------|
+| [nateraw/kinetics](https://huggingface.co/datasets/nateraw/kinetics) | Real | Human action videos from Kinetics |
+| [DeepAction](https://huggingface.co/datasets/ByteDance/DeepAction) | Synthetic | AI-generated videos from 7 generators |
 
 ---
 
-## Repository Structure
+## Requirements
 
-```
-ai-video-detector/
-├── data/                 # real & synthetic datasets
-│   ├── real/
-│   └── synthetic/
-├── preprocessing/        # frame extraction, FFT, residuals, dataset downloaders
-├── models/               # model definitions (ResNet, TimeSformer, etc.)
-├── utils/                # helper functions (configs, metrics, plots)
-├── results/              # training logs, ROC curves, saved checkpoints
-└── main.py               # pipeline entry point
-```
+- Python 3.8+
+- PyTorch
+- OpenCV
+- NumPy
+- scikit-learn
+- matplotlib
+- tqdm
 
-## Setup Instructions
-
-### 1. Clone and Initialize
-```bash
-git clone https://github.com/ItsKenaj/ai-video-detector.git
-cd ai-video-detector
-python -m venv venv
-venv\Scripts\activate   # (Windows)
-# or source venv/bin/activate   # (macOS/Linux)
-pip install -r requirements.txt
-```
+See `requirements.txt` for full dependencies.
 
 ---
 
-### 2. Download Datasets
-```bash
-python preprocessing/download_datasets.py
+## Citation
+
+If you use this code, please cite:
 ```
-
----
-
-### 3. Preprocess Data
-Extract frames, compute residuals, and FFT features:
-```bash
-python preprocessing/extract_frames.py
-python preprocessing/compute_residuals.py
-python preprocessing/compute_fft.py
-```
-
----
-
-### 4. Train and Evaluate
-Train your baseline model (ResNet-18) and evaluate performance:
-```bash
-python main.py --train
-```
-
-Trained weights, logs, and figures will be saved in:
-```
-results/logs/
-results/figures/
+@misc{washington2024aivideo,
+  author = {Washington, Kenaj},
+  title = {Detecting AI-Generated Videos Using Spatial and Temporal Cues},
+  year = {2024},
+  institution = {Stanford University, CS229}
+}
 ```
