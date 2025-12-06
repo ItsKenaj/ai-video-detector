@@ -51,9 +51,6 @@ ai-video-detector/
 ├── utils/
 │   ├── config.py                # Configuration constants
 │   └── plot_metrics.py          # Plotting utilities
-├── report/
-│   ├── main.tex                 # LaTeX report
-│   └── Makefile                 # Compile report
 ├── results/                     # Checkpoints, plots, evaluation results
 ├── requirements.txt
 └── README.md
@@ -155,7 +152,7 @@ If you use this code, please cite:
 @misc{washington2024aivideo,
   author = {Washington, Kenaj},
   title = {Detecting AI-Generated Videos Using Spatial and Temporal Cues},
-  year = {2024},
+  year = {2025},
   institution = {Stanford University, CS229}
 }
 ```
